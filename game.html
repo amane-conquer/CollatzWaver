@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>数字分裂ゲーム</title>
+<style>
+body { font-family: sans-serif; background: #f0f2f5; color: #222; text-align:center; }
+button { margin: 5px; padding: 6px 12px; }
+.seq { font-family: monospace; font-size: 1.2rem; margin: 10px; }
+</style>
+</head>
+<body>
+<h1>数字分裂ゲーム</h1>
+<p>
+初期列：<input id="inputSeq" value="1,2,1">
+<button onclick="initGame()">初期化</button>
+<button onclick="step()">1ステップ進める</button>
+<button onclick="toggleAuto()">オート進行</button>
+</p>
+<div class="seq" id="seqDisplay"></div>
+<div class="seq" id="stepDisplay"></div>
+
+<script>
+let seq = [];
+let stepCount = 0;
+let timer = null;
+
+function display() {
+  document.getElementById("seqDisplay").textContent = "[" + seq.join(", ") + "]";
+  document.getElementById("stepDisplay").textContent = "ステップ: " + stepCount;
+}
+
+function splitPhase(s) {
+  const out = [];
+  for (let x of s) {
+    if (x === 1) out.push(1, 0);
+    else out.push(1, x - 1);
+  }
+  out.push(1);
+  return out;
+}
+
+function mergePhase(s) {
+  let seq = s.slice();
+  for (let i = seq.length - 1; i >= 0; i--) {
+    if (seq[i] === 0) {
+      let j = i + 1;
+      let ones = 0;
+      while (j < seq.length && seq[j] === 1) { ones++; j++; }
+      const delCount = 1 + ones;
+      const right = j;
+      const left = i - 1;
+      if (right < seq.length && seq[right] >= 2) seq[right]--;
+      if (left >= 0) seq[left] += delCount;
+      seq.splice(i, delCount);
+    }
+  }
+  return seq;
+}
+
+function erasePhase(s) {
+  let seq = s.slice();
+  while (seq.length > 0) {
+    if (seq[0] === 1) seq.shift();
+    else { seq[0]--; break; }
+  }
+  return seq;
+}
+
+function stepOnce(s) {
+  return erasePhase(mergePhase(splitPhase(s)));
+}
+
+function step() {
+  if (seq.length === 0) {
+    alert("全て消滅しています。");
+    stopAuto();
+    return;
+  }
+  seq = stepOnce(seq);
+  stepCount++;
+  display();
+  if (seq.length === 0) {
+    stopAuto();
+    alert("全て消滅しました！");
+  }
+}
+
+function initGame() {
+  const input = document.getElementById("inputSeq").value.trim();
+  seq = input.split(",").map(x => parseInt(x.trim(), 10)).filter(x => !isNaN(x));
+  stepCount = 0;
+  stopAuto();
+  display();
+}
+
+function toggleAuto() {
+  if (timer) stopAuto();
+  else timer = setInterval(step, 300);
+}
+
+function stopAuto() {
+  clearInterval(timer);
+  timer = null;
+}
+
+initGame();
+</script>
+</body>
+</html>
